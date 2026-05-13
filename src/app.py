@@ -18,17 +18,20 @@ RABBITMQ_URL = os.environ.get("RABBITMQ_URL", "amqp://guest:guest@localhost:5672
 
 
 def publish_event(event: str, node_name: str):
-    params = pika.URLParameters(RABBITMQ_URL)
-    connection = pika.BlockingConnection(params)
-    channel = connection.channel()
-    channel.queue_declare(queue="node_events", durable=True)
-    body = json.dumps({
-        "event": event,
-        "node_name": node_name,
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-    })
-    channel.basic_publish(exchange="", routing_key="node_events", body=body)
-    connection.close()
+    try:
+        params = pika.URLParameters(RABBITMQ_URL)
+        connection = pika.BlockingConnection(params)
+        channel = connection.channel()
+        channel.queue_declare(queue="node_events", durable=True)
+        body = json.dumps({
+            "event": event,
+            "node_name": node_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        })
+        channel.basic_publish(exchange="", routing_key="node_events", body=body)
+        connection.close()
+    except Exception:
+        pass
 
 
 @app.get("/health")
